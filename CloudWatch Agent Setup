@@ -1,0 +1,108 @@
+# Install the CloudWatch agent
+sudo yum install -y amazon-cloudwatch-agent
+
+# Create CloudWatch agent configuration file
+sudo tee /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json > /dev/null << 'EOF'
+{
+  "agent": {
+    "metrics_collection_interval": 10,
+    "run_as_user": "root"
+  },
+  "metrics": {
+    "metrics_collected": {
+      "cpu": {
+        "resources": [
+          "*"
+        ],
+        "measurement": [
+          "cpu_usage_idle",
+          "cpu_usage_iowait",
+          "cpu_usage_user",
+          "cpu_usage_system"
+        ],
+        "totalcpu": true
+      },
+      "disk": {
+        "resources": [
+          "/",
+          "/var"
+        ],
+        "measurement": [
+          "used_percent",
+          "inodes_free"
+        ]
+      },
+      "diskio": {
+        "resources": [
+          "*"
+        ],
+        "measurement": [
+          "io_time",
+          "write_bytes",
+          "read_bytes",
+          "writes",
+          "reads"
+        ]
+      },
+      "mem": {
+        "measurement": [
+          "mem_used_percent"
+        ]
+      },
+      "netstat": {
+        "measurement": [
+          "tcp_established",
+          "tcp_time_wait",
+          "tcp_syn_sent"
+        ]
+      },
+      "net": {
+        "resources": [
+          "eth0"
+        ],
+        "measurement": [
+          "bytes_sent",
+          "bytes_recv",
+          "packets_sent",
+          "packets_recv"
+        ]
+      }
+    },
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/httpd/access_log",
+            "log_group_name": "httpd-access-logs",
+            "log_stream_name": "{instance_id}-access-log",
+            "retention_in_days": 7
+          },
+          {
+            "file_path": "/var/log/httpd/error_log",
+            "log_group_name": "httpd-error-logs",
+            "log_stream_name": "{instance_id}-error-log",
+            "retention_in_days": 7
+          },
+          {
+            "file_path": "/var/log/messages",
+            "log_group_name": "system-logs",
+            "log_stream_name": "{instance_id}-messages",
+            "retention_in_days": 7
+          }
+        ]
+      }
+    }
+  }
+}
+EOF
+
+# Start the CloudWatch agent
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+
+# Enable the CloudWatch agent to start on boot
+sudo systemctl enable amazon-cloudwatch-agent

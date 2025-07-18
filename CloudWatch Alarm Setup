@@ -1,0 +1,27 @@
+# Create alarm for high CPU usage
+aws cloudwatch put-metric-alarm \
+  --alarm-name HighCPUUsage \
+  --alarm-description "Alarm when CPU exceeds 70%" \
+  --metric-name CPUUtilization \
+  --namespace AWS/EC2 \
+  --statistic Average \
+  --period 60 \
+  --threshold 70 \
+  --comparison-operator GreaterThanThreshold \
+  --dimensions Name=InstanceId,Value=<target-instance-id> \
+  --evaluation-periods 2 \
+  --alarm-actions arn:aws:sns:<region>:<account-id>:CloudWatchAlarms
+
+# Create alarm for high network traffic
+aws cloudwatch put-metric-alarm \
+  --alarm-name HighNetworkTraffic \
+  --alarm-description "Alarm when NetworkIn exceeds 5MB" \
+  --metric-name NetworkIn \
+  --namespace AWS/EC2 \
+  --statistic Average \
+  --period 60 \
+  --threshold 5000000 \
+  --comparison-operator GreaterThanThreshold \
+  --dimensions Name=InstanceId,Value=<target-instance-id> \
+  --evaluation-periods 2 \
+  --alarm-actions arn:aws:sns:<region>:<account-id>:CloudWatchAlarms

@@ -1,0 +1,1117 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDoS Monitoring Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        :root {
+            --primary-bg: #f8f9fa;
+            --secondary-bg: #ffffff;
+            --primary-text: #212529;
+            --secondary-text: #6c757d;
+            --border-color: #dee2e6;
+            --danger-color: #dc3545;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+        }
+
+        body.dark-mode {
+            --primary-bg: #212529;
+            --secondary-bg: #2c3034;
+            --primary-text: #f8f9fa;
+            --secondary-text: #adb5bd;
+            --border-color: #495057;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--primary-text);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .title h1 {
+            font-size: 24px;
+            color: var(--primary-text);
+        }
+
+        .toggle-theme {
+            background: none;
+            border: none;
+            color: var(--primary-text);
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--secondary-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--primary-text);
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: var(--secondary-text);
+        }
+
+        .metrics-grid {
+            grid-column: span 8;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .metric-card {
+            grid-column: span 1;
+        }
+
+        @media (max-width: 1200px) {
+            .metrics-grid {
+                grid-column: span 12;
+            }
+        }
+
+        .chart-container {
+            height: 250px;
+            width: 100%;
+        }
+
+        .logs-section {
+            grid-column: span 4;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (max-width: 1200px) {
+            .logs-section {
+                grid-column: span 12;
+            }
+        }
+
+        .logs-card {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logs-container {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 500px;
+            margin-top: 10px;
+        }
+
+        .log-entry {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-entry-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .log-entry-ip {
+            color: var(--info-color);
+        }
+
+        .log-entry-time {
+            color: var(--secondary-text);
+            font-size: 12px;
+        }
+
+        .log-entry-type {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            background-color: var(--info-color);
+            color: white;
+            margin-right: 5px;
+        }
+
+        .log-entry-content {
+            font-family: monospace;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--secondary-text);
+        }
+
+        .log-entry-actions {
+            margin-top: 5px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .block-ip-btn, .scan-ip-btn, .view-logs-btn {
+            border: none;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .block-ip-btn {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .scan-ip-btn {
+            background-color: var(--warning-color);
+            color: var(--primary-text);
+        }
+
+        .view-logs-btn {
+            background-color: var(--info-color);
+            color: white;
+            margin-left: auto;
+        }
+
+        .block-ip-btn:disabled {
+            background-color: var(--secondary-text);
+            cursor: not-allowed;
+        }
+
+        .alarms-card {
+            grid-column: span 12;
+        }
+
+        .alarms-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .alarm-item {
+            padding: 15px;
+            border-radius: 6px;
+            flex: 1;
+            min-width: 250px;
+            max-width: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .alarm-item.active {
+            background-color: rgba(220, 53, 69, 0.1);
+            border: 1px solid var(--danger-color);
+        }
+
+        .alarm-item.resolved {
+            background-color: rgba(40, 167, 69, 0.1);
+            border: 1px solid var(--success-color);
+        }
+
+        .alarm-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .alarm-status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .alarm-status.active {
+            background-color: var(--danger-color);
+        }
+
+        .alarm-status.resolved {
+            background-color: var(--success-color);
+        }
+
+        .alarm-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .alarm-details {
+            font-size: 12px;
+            color: var(--secondary-text);
+        }
+
+        .stats-section {
+            grid-column: span 12;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .stats-section {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stat-card {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--secondary-text);
+        }
+
+        .blocked-ip-tag {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            background-color: var(--danger-color);
+            color: white;
+            margin-left: 5px;
+        }
+
+        .refresh-indicator {
+            font-size: 12px;
+            color: var(--secondary-text);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .refresh-time {
+            font-weight: bold;
+        }
+
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logs-auto-refresh {
+            font-size: 12px;
+            color: var(--secondary-text);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics-grid,
+            .logs-section,
+            .alarms-card {
+                grid-column: span 1;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .metric-card {
+                grid-column: span 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">
+                <h1>DDoS Monitoring Dashboard</h1>
+            </div>
+            <div class="actions">
+                <div class="refresh-indicator">
+                    <span>Auto-refresh: <span class="refresh-time">10s</span></span>
+                    <span id="last-updated"></span>
+                </div>
+                <button class="toggle-theme" id="toggle-theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="stats-section">
+                <div class="card stat-card">
+                    <div class="stat-label">CPU Utilization</div>
+                    <div class="stat-value" id="cpu-stat">0%</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-label">Network Traffic</div>
+                    <div class="stat-value" id="network-stat">0 KB/s</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-label">Requests / min</div>
+                    <div class="stat-value" id="requests-stat">0</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-label">Blocked IPs</div>
+                    <div class="stat-value" id="blocked-ips-stat">0</div>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="card metric-card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">CPU Utilization</div>
+                            <div class="card-subtitle">Average % usage over time</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="cpu-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card metric-card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Network Traffic</div>
+                            <div class="card-subtitle">In/Out over time (bytes)</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="network-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card metric-card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Packets</div>
+                            <div class="card-subtitle">In/Out over time (count)</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="packets-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card metric-card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Request Types</div>
+                            <div class="card-subtitle">Distribution of HTTP methods</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="requests-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="logs-section">
+                <div class="card logs-card">
+                    <div class="card-header logs-header">
+                        <div class="card-title">Access Logs</div>
+                        <div class="logs-auto-refresh">Auto-refresh: <span id="logs-refresh-time">30s</span></div>
+                    </div>
+                    <div class="logs-container" id="logs-container">
+                        <div class="log-entry">
+                            <div class="log-entry-header">
+                                <span class="log-entry-ip">192.168.1.1</span>
+                                <span class="log-entry-time">2023-10-15 14:32:45</span>
+                            </div>
+                            <div>
+                                <span class="log-entry-type">GET</span>
+                            </div>
+                            <div class="log-entry-content">Loading logs...</div>
+                            <div class="log-entry-actions">
+                                <button class="block-ip-btn">Block IP</button>
+                                <button class="scan-ip-btn">
+                                    <i class="fas fa-search"></i> Scan IP
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <button class="view-logs-btn">
+                            <i class="fas fa-file-alt"></i> View Detailed Logs
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card alarms-card">
+                <div class="card-header">
+                    <div class="card-title">CloudWatch Alarms</div>
+                </div>
+                <div class="alarms-container" id="alarms-container">
+                    <div class="alarm-item active">
+                        <div class="alarm-header">
+                            <span class="alarm-status active"></span>
+                            <span>Loading alarms...</span>
+                        </div>
+                        <div class="alarm-name">High CPU Usage</div>
+                        <div class="alarm-details">
+                            Triggered when CPU exceeds 70% for 2 consecutive periods
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script>
+        // Socket.io connection
+        const socket = io();
+
+        // DOM elements
+        const cpuStat = document.getElementById('cpu-stat');
+        const networkStat = document.getElementById('network-stat');
+        const requestsStat = document.getElementById('requests-stat');
+        const blockedIpsStat = document.getElementById('blocked-ips-stat');
+        const logsContainer = document.getElementById('logs-container');
+        const alarmsContainer = document.getElementById('alarms-container');
+        const toggleTheme = document.getElementById('toggle-theme');
+        const lastUpdated = document.getElementById('last-updated');
+        const viewLogsBtn = document.querySelector('.view-logs-btn');
+
+        // Thresholds for charts
+        const thresholds = {
+            cpu: 40, // 70% CPU usage
+            network: 100 * 1024, // 5MB/s
+            packets: 100 // 10K packets/sec
+        };
+
+        // Store for metrics and logs
+        let cpuData = [];
+        let networkData = { in: [], out: [] };
+        let packetsData = { in: [], out: [] };
+        let requestTypes = {};
+        let logs = [];
+        let blockedIPs = [];
+
+        // Initialize charts with plugins for threshold lines
+        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        Chart.defaults.color = getComputedStyle(document.body).getPropertyValue('--secondary-text');
+
+        // Plugin for threshold lines
+        const thresholdPlugin = {
+            id: 'thresholdLine',
+            afterDraw: (chart, args, options) => {
+                if (!options.threshold) return;
+                
+                const ctx = chart.ctx;
+                const yAxis = chart.scales.y;
+                const threshold = options.threshold;
+                
+                // Draw threshold line
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(chart.chartArea.left, yAxis.getPixelForValue(threshold));
+                ctx.lineTo(chart.chartArea.right, yAxis.getPixelForValue(threshold));
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(220, 53, 69, 0.8)';
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.restore();
+                
+                // Add threshold label
+                ctx.save();
+                ctx.fillStyle = 'rgba(220, 53, 69, 0.8)';
+                ctx.font = '10px ' + Chart.defaults.font.family;
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(`Threshold: ${options.thresholdLabel || threshold}`, chart.chartArea.right, yAxis.getPixelForValue(threshold) - 2);
+                ctx.restore();
+            }
+        };
+
+        // Initialize CPU chart
+        const cpuChart = new Chart(document.getElementById('cpu-chart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'CPU Usage %',
+                    data: [],
+                    borderColor: '#17a2b8',
+                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                    tension: 0.1,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    thresholdLine: {
+                        threshold: thresholds.cpu,
+                        thresholdLabel: `${thresholds.cpu}%`
+                    }
+                }
+            },
+            plugins: [thresholdPlugin]
+        });
+
+        // Initialize network chart
+        const networkChart = new Chart(document.getElementById('network-chart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Network In',
+                        data: [],
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Network Out',
+                        data: [],
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    thresholdLine: {
+                        threshold: thresholds.network,
+                        thresholdLabel: formatBytes(thresholds.network) + '/s'
+                    }
+                }
+            },
+            plugins: [thresholdPlugin]
+        });
+
+        // Initialize packets chart
+        const packetsChart = new Chart(document.getElementById('packets-chart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Packets In',
+                        data: [],
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Packets Out',
+                        data: [],
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    thresholdLine: {
+                        threshold: thresholds.packets,
+                        thresholdLabel: `${thresholds.packets.toLocaleString()} packets/s`
+                    }
+                }
+            },
+            plugins: [thresholdPlugin]
+        });
+
+        // Initialize requests chart
+        const requestsChart = new Chart(document.getElementById('requests-chart').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: [
+                        '#17a2b8',
+                        '#28a745',
+                        '#ffc107',
+                        '#dc3545',
+                        '#6c757d'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        // Function to format bytes to human-readable
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        // Update CPU chart
+        function updateCpuChart(data) {
+            // Check if data is valid
+            if (!data || !data.MetricDataResults || data.MetricDataResults.length === 0) {
+                console.error('Invalid CPU metrics data:', data);
+                return;
+            }
+
+            const timestamps = data.MetricDataResults[0].Timestamps.map(t => moment(t).format('HH:mm:ss'));
+            const values = data.MetricDataResults[0].Values;
+
+            // Update chart
+            cpuChart.data.labels = timestamps;
+            cpuChart.data.datasets[0].data = values;
+            cpuChart.update();
+
+            // Update stat
+            if (values.length > 0) {
+                cpuStat.textContent = values[0].toFixed(1) + '%';
+            }
+        }
+
+        // Update network chart
+        function updateNetworkChart(data) {
+            // Check if data is valid
+            if (!data || !data.MetricDataResults || data.MetricDataResults.length < 2) {
+                console.error('Invalid network metrics data:', data);
+                return;
+            }
+
+            const timestamps = data.MetricDataResults[0].Timestamps.map(t => moment(t).format('HH:mm:ss'));
+            const valuesIn = data.MetricDataResults[0].Values;
+            const valuesOut = data.MetricDataResults[1].Values;
+
+            // Update chart
+            networkChart.data.labels = timestamps;
+            networkChart.data.datasets[0].data = valuesIn;
+            networkChart.data.datasets[1].data = valuesOut;
+            networkChart.update();
+
+            // Update stat
+            if (valuesIn.length > 0) {
+                const totalTraffic = valuesIn[0] + valuesOut[0];
+                networkStat.textContent = formatBytes(totalTraffic) + '/s';
+            }
+        }
+
+        // Update packets chart
+        function updatePacketsChart(data) {
+            // Check if data is valid
+            if (!data || !data.MetricDataResults || data.MetricDataResults.length < 2) {
+                console.error('Invalid packets metrics data:', data);
+                return;
+            }
+
+            const timestamps = data.MetricDataResults[0].Timestamps.map(t => moment(t).format('HH:mm:ss'));
+            const valuesIn = data.MetricDataResults[0].Values;
+            const valuesOut = data.MetricDataResults[1].Values;
+
+            // Update chart
+            packetsChart.data.labels = timestamps;
+            packetsChart.data.datasets[0].data = valuesIn;
+            packetsChart.data.datasets[1].data = valuesOut;
+            packetsChart.update();
+        }
+
+        // Update requests chart
+        function updateRequestsChart() {
+            const labels = Object.keys(requestTypes);
+            const data = Object.values(requestTypes);
+
+            // Update chart
+            requestsChart.data.labels = labels;
+            requestsChart.data.datasets[0].data = data;
+            requestsChart.update();
+
+            // Update stat
+            const totalRequests = data.reduce((acc, curr) => acc + curr, 0);
+            requestsStat.textContent = totalRequests;
+        }
+
+        // Update logs
+        function updateLogs(logData) {
+            logs = logData;
+            logsContainer.innerHTML = '';
+
+            // Process logs and update request types
+            requestTypes = {};
+            
+            logs.forEach(log => {
+                // Update request types for chart
+                if (log.method && log.method !== 'Unknown') {
+                    requestTypes[log.method] = (requestTypes[log.method] || 0) + 1;
+                }
+
+                // Create log entry element
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+
+                const time = moment(log.timestamp).format('YYYY-MM-DD HH:mm:ss');
+                
+                logEntry.innerHTML = `
+                    <div class="log-entry-header">
+                        <span class="log-entry-ip">${log.ip} ${log.blocked ? '<span class="blocked-ip-tag">Blocked</span>' : ''}</span>
+                        <span class="log-entry-time">${time}</span>
+                    </div>
+                    <div>
+                        <span class="log-entry-type">${log.method}</span>
+                    </div>
+                    <div class="log-entry-content">${log.message}</div>
+                    <div class="log-entry-actions">
+                        <button class="block-ip-btn" ${log.blocked ? 'disabled' : ''} data-ip="${log.ip}">
+                            ${log.blocked ? 'IP Blocked' : 'Block IP'}
+                        </button>
+                        <button class="scan-ip-btn" data-ip="${log.ip}">
+                            <i class="fas fa-search"></i> Scan IP
+                        </button>
+                    </div>
+                `;
+
+                logsContainer.appendChild(logEntry);
+            });
+
+            // Add event listeners to block buttons
+            document.querySelectorAll('.block-ip-btn').forEach(btn => {
+                if (!btn.disabled) {
+                    btn.addEventListener('click', function() {
+                        const ip = this.getAttribute('data-ip');
+                        blockIP(ip);
+                    });
+                }
+            });
+
+            // Add event listeners to scan buttons
+            document.querySelectorAll('.scan-ip-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const ip = this.getAttribute('data-ip');
+                    window.open(`https://www.virustotal.com/gui/ip-address/${ip}`, '_blank');
+                });
+            });
+
+            // Update requests chart
+            updateRequestsChart();
+        }
+
+        // Update alarms
+        function updateAlarms(alarms) {
+            alarmsContainer.innerHTML = '';
+
+            alarms.forEach(alarm => {
+                const isActive = alarm.StateValue === 'ALARM';
+                const alarmItem = document.createElement('div');
+                alarmItem.className = `alarm-item ${isActive ? 'active' : 'resolved'}`;
+                
+                const time = moment(alarm.StateUpdatedTimestamp).format('YYYY-MM-DD HH:mm:ss');
+                
+                alarmItem.innerHTML = `
+                    <div class="alarm-header">
+                        <span class="alarm-status ${isActive ? 'active' : 'resolved'}"></span>
+                        <span>${alarm.StateValue}</span>
+                    </div>
+                    <div class="alarm-name">${alarm.AlarmName}</div>
+                    <div class="alarm-details">
+                        ${alarm.AlarmDescription || 'No description available'}
+                    </div>
+                    <div class="alarm-details">
+                        Last updated: ${time}
+                    </div>
+                `;
+                
+                alarmsContainer.appendChild(alarmItem);
+            });
+        }
+
+        // Block IP function
+        function blockIP(ip) {
+            fetch('/api/block-ip', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ ip })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('IP blocked:', data);
+                // Refresh the logs after blocking
+                fetchLogs();
+                // Get updated blocked IPs list
+                fetchBlockedIPs();
+            })
+            .catch(error => {
+                console.error('Error blocking IP:', error);
+            });
+        }
+
+        // Update blocked IPs
+        function updateBlockedIPs(ips) {
+            blockedIPs = ips;
+            blockedIpsStat.textContent = blockedIPs.length;
+            
+            // Update logs to reflect blocked status
+            document.querySelectorAll('.log-entry').forEach(entry => {
+                const ipElement = entry.querySelector('.log-entry-ip');
+                const ip = ipElement.textContent.split(' ')[0];
+                const blockBtn = entry.querySelector('.block-ip-btn');
+                
+                if (blockedIPs.includes(ip)) {
+                    if (!ipElement.innerHTML.includes('Blocked')) {
+                        ipElement.innerHTML = `${ip} <span class="blocked-ip-tag">Blocked</span>`;
+                    }
+                    
+                    if (blockBtn) {
+                        blockBtn.textContent = 'IP Blocked';
+                        blockBtn.disabled = true;
+                    }
+                }
+            });
+        }
+
+        // Toggle dark mode
+        toggleTheme.addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+            const icon = this.querySelector('i');
+            if (document.body.classList.contains('dark-mode')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+        });
+
+        // View Logs button handler
+        viewLogsBtn.addEventListener('click', function() {
+            // For demo purposes, we'll use a placeholder URL
+            // You can replace this with the actual URL later
+            window.location.href = '/logs';
+        });
+
+        // Functions to fetch data from API
+        function fetchCpuMetrics() {
+            fetch('/api/metrics/cpu')
+                .then(response => response.json())
+                .then(data => {
+                    updateCpuChart(data);
+                    lastUpdated.textContent = `(Last updated: ${moment().format('HH:mm:ss')})`;
+                })
+                .catch(error => console.error('Error fetching CPU metrics:', error));
+        }
+
+        function fetchNetworkMetrics() {
+            fetch('/api/metrics/network')
+                .then(response => response.json())
+                .then(data => {
+                    updateNetworkChart(data);
+                })
+                .catch(error => console.error('Error fetching network metrics:', error));
+        }
+
+        function fetchPacketsMetrics() {
+            fetch('/api/metrics/packets')
+                .then(response => response.json())
+                .then(data => {
+                    updatePacketsChart(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching packets metrics:', error);
+                    // Display error message on the chart if data can't be loaded
+                    packetsChart.data.labels = ['Error loading data'];
+                    packetsChart.data.datasets.forEach(dataset => {
+                        dataset.data = [0];
+                    });
+                    packetsChart.update();
+                });
+        }
+
+        function fetchLogs() {
+            fetch('/api/logs')
+                .then(response => response.json())
+                .then(data => {
+                    updateLogs(data);
+                })
+                .catch(error => console.error('Error fetching logs:', error));
+        }
+
+        function fetchAlarms() {
+            fetch('/api/alarms')
+                .then(response => response.json())
+                .then(data => {
+                    updateAlarms(data);
+                })
+                .catch(error => console.error('Error fetching alarms:', error));
+        }
+
+        function fetchBlockedIPs() {
+            fetch('/api/blocked-ips')
+                .then(response => response.json())
+                .then(data => {
+                    updateBlockedIPs(data);
+                })
+                .catch(error => console.error('Error fetching blocked IPs:', error));
+        }
+
+        // Check if data is available for packets chart
+        function checkPacketsData() {
+            if (packetsChart.data.datasets[0].data.length === 0) {
+                console.log('No packets data available, fetching...');
+                fetchPacketsMetrics();
+            }
+        }
+
+        // Socket.io event handlers
+        socket.on('cpu-metrics', data => {
+            updateCpuChart(data);
+            lastUpdated.textContent = `(Last updated: ${moment().format('HH:mm:ss')})`;
+        });
+
+        socket.on('network-metrics', data => {
+            updateNetworkChart(data);
+        });
+
+        socket.on('packets-metrics', data => {
+            updatePacketsChart(data);
+        });
+
+        socket.on('logs-update', data => {
+            updateLogs(data);
+        });
+
+        socket.on('alarms-update', data => {
+            updateAlarms(data);
+        });
+
+        socket.on('blocked-ips-updated', data => {
+            updateBlockedIPs(data);
+        });
+
+        // Initial data loading
+        fetchCpuMetrics();
+        fetchNetworkMetrics();
+        fetchPacketsMetrics();
+        fetchLogs();
+        fetchAlarms();
+        fetchBlockedIPs();
+
+        // Set up auto-refresh for logs every 30 seconds
+        const logsRefreshInterval = 30; // seconds
+        setInterval(() => {
+            console.log('Auto-refreshing logs...');
+            fetchLogs();
+            document.getElementById('logs-refresh-time').innerText = `${logsRefreshInterval}s`;
+        }, logsRefreshInterval * 1000);
+
+        // Set countdown timer for logs refresh
+        let logsCountdown = logsRefreshInterval;
+        setInterval(() => {
+            logsCountdown--;
+            if (logsCountdown <= 0) {
+                logsCountdown = logsRefreshInterval;
+            }
+            document.getElementById('logs-refresh-time').innerText = `${logsCountdown}s`;
+        }, 1000);
+
+        // Check for packets data every 5 seconds until it's available
+        const packetsDataCheckInterval = setInterval(() => {
+            checkPacketsData();
+            // Clear interval after 1 minute if data still not available
+            setTimeout(() => {
+                clearInterval(packetsDataCheckInterval);
+            }, 60000);
+        }, 5000);
+    </script>
+</body>
+</html>

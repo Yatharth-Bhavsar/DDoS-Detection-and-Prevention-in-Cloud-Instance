@@ -1,0 +1,29 @@
+# Create IAM role trust policy document
+cat > ec2-cloudwatch-trust-policy.json << 'EOF'
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+
+# Create IAM role
+aws iam create-role --role-name EC2CloudWatchRole --assume-role-policy-document file://ec2-cloudwatch-trust-policy.json
+
+# Attach CloudWatch policies
+aws iam attach-role-policy --role-name EC2CloudWatchRole --policy-arn arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+aws iam attach-role-policy --role-name EC2CloudWatchRole --policy-arn arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+
+# Create instance profile and add role to it
+aws iam create-instance-profile --instance-profile-name EC2CloudWatchProfile
+aws iam add-role-to-instance-profile --instance-profile-name EC2CloudWatchProfile --role-name EC2CloudWatchRole
+
+# Attach role to EC2 instances (repeat for both instances)
+aws ec2 associate-iam-instance-profile --instance-id <instance-id> --iam-instance-profile Name=EC2CloudWatchProfile

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Target Server</title>
+</head>
+<body>
+  <h1>Target Server</h1>
+  <p>This server is set up to receive simulated DDoS traffic.</p>
+  <p>Current time: <span id="current-time"></span></p>
+  <script>
+    function updateTime() {
+      document.getElementById('current-time').textContent = new Date().toLocaleString();
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+  </script>
+</body>
+</html>

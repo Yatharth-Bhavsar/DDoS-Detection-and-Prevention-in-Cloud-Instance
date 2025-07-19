@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Address Checker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .header {
+            background-color: #212529;
+            color: white;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .ip-form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .results {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .malicious {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .safe {
+            color: #198754;
+            font-weight: bold;
+        }
+        #map {
+            height: 300px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>IP Address Checker</h1>
+            <p>Check if an IP address is malicious and view its geographical information</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="ip-form">
+                    <h3>Check an IP Address</h3>
+                    <form id="ipCheckForm">
+                        <div class="mb-3">
+                            <label for="ipAddress" class="form-label">IP Address</label>
+                            <input type="text" class="form-control" id="ipAddress" 
+                                   placeholder="Enter IP address (e.g., 8.8.8.8)" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Check IP</button>
+                    </form>
+                    <div class="loading" id="loadingSpinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>Processing...</p>
+                    </div>
+                </div>
+                
+                <div class="ip-form">
+                    <h3>Report Malicious IP</h3>
+                    <form id="reportForm">
+                        <div class="mb-3">
+                            <label for="reportIpAddress" class="form-label">Malicious IP Address</label>
+                            <input type="text" class="form-control" id="reportIpAddress" 
+                                   placeholder="Enter malicious IP address" required>
+                        </div>
+                        <button type="submit" class="btn btn-danger">Report IP</button>
+                    </form>
+                    <div id="reportResult" class="mt-3"></div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="results" id="results" style="display: none;">
+                    <h3>Results</h3>
+                    <div id="statusResult"></div>
+                    <hr>
+                    <h4>IP Information</h4>
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <th>IP Address</th>
+                                <td id="resultIp"></td>
+                            </tr>
+                            <tr>
+                                <th>Country</th>
+                                <td id="resultCountry"></td>
+                            </tr>
+                            <tr>
+                                <th>City</th>
+                                <td id="resultCity"></td>
+                            </tr>
+                            <tr>
+                                <th>Coordinates</th>
+                                <td id="resultCoords"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>IP Checker Service © 2025</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // IP Check Form
+            const ipCheckForm = document.getElementById('ipCheckForm');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const results = document.getElementById('results');
+            const statusResult = document.getElementById('statusResult');
+            const resultIp = document.getElementById('resultIp');
+            const resultCountry = document.getElementById('resultCountry');
+            const resultCity = document.getElementById('resultCity');
+            const resultCoords = document.getElementById('resultCoords');
+            let map = null;
+            
+            ipCheckForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const ipAddress = document.getElementById('ipAddress').value.trim();
+                
+                if (!ipAddress) {
+                    alert('Please enter an IP address');
+                    return;
+                }
+                
+                // Show loading spinner
+                loadingSpinner.style.display = 'block';
+                results.style.display = 'none';
+                
+                try {
+                    const response = await fetch('/api/check-ip', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ ipAddress })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    // Hide loading spinner
+                    loadingSpinner.style.display = 'none';
+                    
+                    // Show results
+                    results.style.display = 'block';
+                    
+                    // Update status
+                    if (data.isMalicious) {
+                        statusResult.innerHTML = `<div class="alert alert-danger">
+                            <h4 class="alert-heading">WARNING: Malicious IP Detected!</h4>
+                            <p>This IP address has been identified as potentially malicious.</p>
+                        </div>`;
+                    } else {
+                        statusResult.innerHTML = `<div class="alert alert-success">
+                            <h4 class="alert-heading">Safe IP Address</h4>
+                            <p>No threats detected for this IP address.</p>
+                        </div>`;
+                    }
+                    
+                    // Update IP info
+                    const features = data.features;
+                    resultIp.textContent = features.IP;
+                    resultCountry.textContent = features.Country || 'Unknown';
+                    resultCity.textContent = features.City || 'Unknown';
+                    
+                    if (features.Latitude && features.Longitude) {
+                        resultCoords.textContent = `${features.Latitude}, ${features.Longitude}`;
+                        
+                        // Initialize or update map
+                        if (!map) {
+                            map = L.map('map').setView([features.Latitude, features.Longitude], 10);
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            }).addTo(map);
+                        } else {
+                            map.setView([features.Latitude, features.Longitude], 10);
+                        }
+                        
+                        // Add marker
+                        L.marker([features.Latitude, features.Longitude])
+                            .addTo(map)
+                            .bindPopup(`<b>${features.IP}</b><br>${features.City || ''}, ${features.Country || 'Unknown'}`)
+                            .openPopup();
+                    } else {
+                        resultCoords.textContent = 'Unknown';
+                        document.getElementById('map').style.display = 'none';
+                    }
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    loadingSpinner.style.display = 'none';
+                    alert('Error checking IP. Please try again.');
+                }
+            });
+            
+            // Report Form
+            const reportForm = document.getElementById('reportForm');
+            const reportResult = document.getElementById('reportResult');
+            
+            reportForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const ipAddress = document.getElementById('reportIpAddress').value.trim();
+                
+                if (!ipAddress) {
+                    alert('Please enter an IP address');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/add-malicious-ip', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ ipAddress })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        reportResult.innerHTML = `<div class="alert alert-success">
+                            ${data.message}
+                        </div>`;
+                    } else {
+                        reportResult.innerHTML = `<div class="alert alert-warning">
+                            ${data.message}
+                        </div>`;
+                    }
+                    
+                    // Clear form
+                    document.getElementById('reportIpAddress').value = '';
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    reportResult.innerHTML = `<div class="alert alert-danger">
+                        Error submitting IP. Please try again.
+                    </div>`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

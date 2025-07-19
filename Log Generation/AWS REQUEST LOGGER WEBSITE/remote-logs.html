@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote Server Logs</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        .log-container {
+            max-height: 600px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .log-entry:hover {
+            background-color: #e9ecef;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .warning {
+            color: #ffc107;
+        }
+        .info {
+            color: #0d6efd;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Remote Server Logs</h1>
+        <p class="lead">Monitoring logs from: <span id="server-address" class="text-primary">http://54.83.113.89</span></p>
+        
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="d-flex justify-content-between">
+                    <button id="refresh-btn" class="btn btn-primary">Refresh Logs</button>
+                    <a href="/" class="btn btn-secondary">Back to Dashboard</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Server Logs</h5>
+                            <span id="last-updated" class="text-muted">Never updated</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="logs-container" class="log-container">
+                            <div class="text-center p-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-3">Fetching logs from remote server...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load logs when page loads
+            fetchLogs();
+            
+            // Set up refresh button
+            document.getElementById('refresh-btn').addEventListener('click', fetchLogs);
+            
+            // Function to fetch logs from our API
+            function fetchLogs() {
+                const logsContainer = document.getElementById('logs-container');
+                logsContainer.innerHTML = `
+                    <div class="text-center p-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">Fetching logs from remote server...</p>
+                    </div>
+                `;
+                
+                fetch('/api/remote-logs')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch logs');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Update last updated timestamp
+                        document.getElementById('last-updated').textContent = 
+                            `Last updated: ${new Date().toLocaleTimeString()}`;
+                        
+                        // Display the logs
+                        displayLogs(data);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        logsContainer.innerHTML = `
+                            <div class="alert alert-danger">
+                                <h4 class="alert-heading">Error Loading Logs</h4>
+                                <p>${error.message}</p>
+                                <hr>
+                                <p class="mb-0">Make sure the remote server is accessible and has an endpoint that returns logs.</p>
+                            </div>
+                        `;
+                    });
+            }
+            
+            // Function to display logs in the container
+            function displayLogs(data) {
+                const logsContainer = document.getElementById('logs-container');
+                
+                if (!data.logs || data.logs.length === 0) {
+                    logsContainer.innerHTML = `
+                        <div class="alert alert-info">
+                            No logs available from the remote server.
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Clear previous logs
+                logsContainer.innerHTML = '';
+                
+                // Add each log entry
+                data.logs.forEach(log => {
+                    const logElement = document.createElement('div');
+                    logElement.className = `log-entry ${getLevelClass(log.level)}`;
+                    
+                    // Format the log entry based on structure
+                    logElement.innerHTML = `
+                        <div class="d-flex justify-content-between">
+                            <span>${formatLogMessage(log)}</span>
+                            <span class="timestamp">${formatTimestamp(log.timestamp)}</span>
+                        </div>
+                    `;
+                    
+                    logsContainer.appendChild(logElement);
+                });
+                
+                // Scroll to bottom of logs
+                logsContainer.scrollTop = logsContainer.scrollHeight;
+            }
+            
+            // Helper function to format log message
+            function formatLogMessage(log) {
+                // This will depend on the structure of your logs
+                if (typeof log === 'string') {
+                    return log;
+                }
+                
+                if (log.message) {
+                    let message = log.message;
+                    if (log.ip) {
+                        message = `[${log.ip}] ${message}`;
+                    }
+                    if (log.method && log.url) {
+                        message = `${log.method} ${log.url} - ${message}`;
+                    }
+                    return message;
+                }
+                
+                return JSON.stringify(log);
+            }
+            
+            // Helper function to get CSS class based on log level
+            function getLevelClass(level) {
+                if (!level) return '';
+                
+                level = level.toLowerCase();
+                if (level === 'error') return 'error';
+                if (level === 'warning' || level === 'warn') return 'warning';
+                if (level === 'info') return 'info';
+                return '';
+            }
+            
+            // Helper function to format timestamp
+            function formatTimestamp(timestamp) {
+                if (!timestamp) return '';
+                
+                try {
+                    const date = new Date(timestamp);
+                    return date.toLocaleTimeString();
+                } catch (e) {
+                    return timestamp;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Logger Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <i class="fas fa-server"></i>
+            <h1>Request Logger</h1>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#" class="active">Dashboard</a></li>
+                <li><a href="#" id="test-request-btn">Send Test Request</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="dashboard">
+            <div class="stats-container">
+                <div class="stat-card">
+                    <i class="fas fa-globe"></i>
+                    <div class="stat-info">
+                        <h3>Total Requests</h3>
+                        <p id="total-requests">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div class="stat-info">
+                        <h3>Error Requests</h3>
+                        <p id="error-requests">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-chart-line"></i>
+                    <div class="stat-info">
+                        <h3>Success Rate</h3>
+                        <p id="success-rate">0%</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-clock"></i>
+                    <div class="stat-info">
+                        <h3>Last Request</h3>
+                        <p id="last-request">Never</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <h2>Request Logs</h2>
+                <div class="actions">
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="Search logs...">
+                        <button id="search-btn"><i class="fas fa-search"></i></button>
+                    </div>
+                    <button id="refresh-btn" class="refresh-btn">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="logs-container">
+                <table id="logs-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Method</th>
+                            <th>Path</th>
+                            <th>Status</th>
+                            <th>IP</th>
+                            <th>User Agent</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-body">
+                        <!-- Logs will be inserted here by JavaScript -->
+                    </tbody>
+                </table>
+                <div id="empty-state" class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No logs found. Start making requests to see them appear here.</p>
+                </div>
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading logs...</p>
+                </div>
+            </div>
+
+            <div class="pagination">
+                <button id="prev-page" disabled><i class="fas fa-chevron-left"></i> Previous</button>
+                <span id="page-info">Page 1 of 1</span>
+                <button id="next-page" disabled>Next <i class="fas fa-chevron-right"></i></button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Log Detail Modal -->
+    <div id="log-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Log Details</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="log-detail-container">
+                    <!-- Log details will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Request Logger Dashboard. All rights reserved.</p>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
